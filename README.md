@@ -2,6 +2,9 @@
 
 A scalable workflow automation platform inspired by **Zapier** and **n8n**, allowing users to visually build workflows that connect multiple applications through triggers and actions.
 <img width="1593" height="730" alt="image" src="https://github.com/user-attachments/assets/f87e24b6-396c-422b-8206-e6ed026ef04f" />
+## System Design
+
+<img width="1096" height="556" alt="Screenshot 2026-06-12 152153" src="https://github.com/user-attachments/assets/63d6208f-2bf3-4fb0-9ff4-77d2f7acdc82" />
 
 ## Features
 
