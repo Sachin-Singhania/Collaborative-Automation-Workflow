@@ -1,0 +1,137 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/client"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+model User {
+  userId            String    @id @default(uuid())
+  name          String?
+  email         String   @unique
+   googleID    String?    @unique
+  tokenExpiry DateTime?
+  image       String?
+   createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+  password    String?
+  accessToken  String?
+  refreshToken  String?
+  workflows   WorkflowMember[]
+  createdWorkflows Workflow[]
+
+  appCredentials AppCredential[]
+}
+
+model WorkflowMember {
+  @@id([workflowId, userId])
+  workflowId String
+  userId     String
+  role       Role     @default(VIEWER)
+  workflow   Workflow @relation(fields: [workflowId], references: [id])
+  user       User     @relation(fields: [userId], references: [userId])
+}
+
+
+model Apps {
+  id          String   @id @default(uuid())
+  name        String
+  image       String
+  metadata    Json
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  appCredentials AppCredential[]
+  workflowSteps WorkflowStep[]
+}
+enum ExecutionStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+  QUEUED
+}
+
+model Workflow {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  isPublished Boolean  @default(false)
+  version     String   @default("1.0.0")
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  creatorId   String
+
+  executions  Executions[]
+  members     WorkflowMember[]
+  steps       WorkflowStep[]  
+  creator     User     @relation(fields: [creatorId], references: [userId], onDelete: Cascade)
+}
+
+
+model Executions {
+  id          String   @id @default(uuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  status      ExecutionStatus @default(PENDING)
+  startedAt   DateTime  @default(now())
+    isTest      Boolean @default(false)
+  completedAt DateTime?
+  triggerData Json?    
+  logs        ExecutionLog[]
+}
+
+model ExecutionLog {
+  id            String     @id @default(uuid())
+  executionId   String
+  execution     Executions @relation(fields: [executionId], references: [id], onDelete: Cascade)
+  stepId        String
+  
+  status        ExecutionStatus
+  inputPayload  Json?
+  outputPayload Json?
+  errorMessage  String?
+  
+  createdAt     DateTime   @default(now())
+}
+model WorkflowStep {
+  id          String   @id @default(uuid())
+  workflowId  String
+  workflow    Workflow @relation(fields: [workflowId], references: [id], onDelete: Cascade)
+  webhookSlug String?  @unique @default(cuid())
+  appId       String?  
+    app     Apps? @relation(fields: [appId], references: [id])
+  eventId     String?
+  type        StepType 
+  settings    Json     @default("{}") 
+  nextStepId  String?  @unique
+  nextStep    WorkflowStep? @relation("StepToStep", fields: [nextStepId], references: [id])
+  previousStep WorkflowStep? @relation("StepToStep")
+}
+
+model AppCredential {
+  id           String   @id @default(uuid())
+  userId       String
+  user         User     @relation(fields: [userId], references: [userId], onDelete: Cascade)
+  appId        String
+  app          Apps     @relation(fields: [appId], references: [id], onDelete: Cascade)
+  
+  accessToken  String   
+  refreshToken String?
+  expiresAt    DateTime?
+  
+  @@unique([userId, appId]) 
+}
+
+
+
+enum StepType {
+  TRIGGER
+  ACTION
+}
+enum Role {
+  OWNER
+  EDITOR
+  VIEWER
+}
